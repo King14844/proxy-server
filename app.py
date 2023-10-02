@@ -10,13 +10,20 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE')
     return response
 
-@app.route('/', methods=['GET'])
-def proxy_api_data():
-    api_endpoint = 'http://44.214.182.154:4000/'
+@app.route('/', methods=['GET', 'POST'])
+def proxy_api():
+    url = request.args.get('url')
+    if not url:
+        return jsonify(error='Missing "url" query parameter'), 400
+
     try:
-        response = requests.get(api_endpoint)
+        if request.method == 'GET':
+            response = requests.get(url, params=request.args)
+        elif request.method == 'POST':
+            response = requests.post(url, data=request.data, headers=dict(request.headers))
+
         response.raise_for_status()
-        return response.text
+        return response.text, response.status_code
     except requests.exceptions.RequestException as e:
         return jsonify(error=str(e)), 500
 
