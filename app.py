@@ -14,7 +14,7 @@ def after_request(response):
 def proxy_api():
     url = request.args.get('url')
     if not url:
-        return jsonify(error='Missing "url" query parameter'), 400
+        return jsonify(error='Missing url query parameter'), 400
 
     try:
         if request.method == 'GET':
@@ -23,7 +23,14 @@ def proxy_api():
             response = requests.post(url, data=request.data, headers=dict(request.headers))
 
         response.raise_for_status()
+        content_type = response.headers.get('Content-Type')
+
+        if 'application/json' in content_type:
+            return jsonify(response.json()), response.status_code
+        elif 'text/html' in content_type:
+            return response.text, response.status_code
         return response.text, response.status_code
+
     except requests.exceptions.RequestException as e:
         return jsonify(error=str(e)), 500
 
